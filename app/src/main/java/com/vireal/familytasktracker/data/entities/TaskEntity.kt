@@ -17,6 +17,6 @@ data class TaskEntity(
     @ColumnInfo(name = "updated_date") val updatedDate: Long,
     @ColumnInfo(name = "assigned_to_user") val assignedToUser: Int,
     @ColumnInfo(name = "created_by_user") val createdByUser: Int,
-    @ColumnInfo(name = "due_date") val dueDate: Int?,
+    @ColumnInfo(name = "due_date") val dueDate: Long?,
     @ColumnInfo(name = "is_completed") val isCompleted: Boolean,
 ) : Parcelable

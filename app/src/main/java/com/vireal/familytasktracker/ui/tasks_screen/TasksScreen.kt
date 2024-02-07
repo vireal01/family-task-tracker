@@ -1,8 +1,10 @@
 package com.vireal.familytasktracker.ui.tasks_screen
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,24 +21,58 @@ import com.vireal.familytasktracker.ui.Paddings
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Send
+import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
+import com.vireal.familytasktracker.R
+import com.vireal.familytasktracker.ui.TopAppBar
 
 @Composable
 fun TaskScreen(
-    viewModel: TasksViewModel = hiltViewModel()
+    viewModel: TasksViewModel = hiltViewModel(),
+    openDrawer: () -> Unit = {}
 ) {
+    val showBottomSheet = remember { mutableStateOf(false) }
+
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = stringResource(id = R.string.tasks_title),
+                openDrawer = { openDrawer() }
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { viewModel.createStubTask() },
+                onClick = {
+                    showBottomSheet.value = true
+                },
                 containerColor = MaterialTheme.colorScheme.secondaryContainer,
                 contentColor = MaterialTheme.colorScheme.secondary
             ) {
@@ -52,42 +88,168 @@ fun TaskScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             items(tasks, key = { task -> task.taskId }) { task ->
-                TaskItem(item = task)
+                TaskItem(
+                    item = task,
+                    onCheckedChange = {
+                        viewModel.changeTaskCompletionStatus(
+                            task,
+                            !task.isCompleted
+                        )
+                    }
+                )
             }
+        }
+        if (showBottomSheet.value) {
+            CreateTaskBottomSheet(
+                showBottomSheet = showBottomSheet,
+                viewModel = viewModel
+            )
         }
     }
 }
 
 @Composable
-fun TaskItem(item: TaskEntity) {
+fun TaskItem(
+    item: TaskEntity,
+    onCheckedChange: () -> Unit
+) {
+    val textDecoration = if (item.isCompleted) TextDecoration.LineThrough else TextDecoration.None
     Surface(
         color = MaterialTheme.colorScheme.surfaceVariant,
         shape = MaterialTheme.shapes.medium,
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-//                .clickable { onClick() }
-                .padding(Paddings.one)
-                .height(64.dp - Paddings.one),
-            verticalArrangement = Arrangement.SpaceAround
+        Row(
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = item.taskTitle,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
+            Column(
+                modifier = Modifier
+//                .clickable { onClick() }
+                    .padding(Paddings.one)
+                    .weight(4f)
+                    .height(64.dp - Paddings.one),
+                verticalArrangement = Arrangement.SpaceAround
+            ) {
+                Text(
+                    text = item.taskTitle,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.titleMedium,
+                    textDecoration = textDecoration,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = item.taskDescription.toString(),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textDecoration = textDecoration,
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Left,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(modifier = Modifier.width(Paddings.one))
+            }
+
+            Checkbox(
+                checked = item.isCompleted,
+                onCheckedChange = {
+                    onCheckedChange()
+                },
+                modifier = Modifier.weight(1f)
             )
-            Text(
-                text = item.taskDescription.toString(),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Left,
+        }
+
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CreateTaskBottomSheet(
+    showBottomSheet: MutableState<Boolean>,
+    viewModel: TasksViewModel
+) {
+    val sheetState = rememberModalBottomSheetState()
+    val scope = rememberCoroutineScope()
+    val focusRequester = remember { FocusRequester() }
+    var taskTitle by rememberSaveable { mutableStateOf("") }
+    var taskDescription by rememberSaveable { mutableStateOf("") }
+
+
+    ModalBottomSheet(onDismissRequest = {
+        // TODO: Add alert to prevent false task closing
+        showBottomSheet.value = false
+    }) {
+        Column(
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            TextField(
+                value = taskTitle,
+                placeholder = {
+                    Text(
+                        text = "Title",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                },
+                textStyle = MaterialTheme.typography.titleMedium,
+                onValueChange = { taskTitle = it },
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester)
+                    .padding(Paddings.half)
             )
-            Spacer(modifier = Modifier.width(Paddings.one))
+            TextField(
+                value = taskDescription,
+                onValueChange = { taskDescription = it },
+                placeholder = { Text(text = "Description") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(Paddings.half)
+            )
+
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(Paddings.half)
+            ) {
+
+                OutlinedButton(
+                    onClick = { /*TODO: Open due date picker*/ },
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.inverseOnSurface)
+                ) {
+                    Text(
+                        text = "Today",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Button(onClick = {
+                    scope.launch {
+                        viewModel.createTask(
+                            taskTitle,
+                            taskDescription
+                        )
+                        sheetState.hide()
+                    }.invokeOnCompletion {
+                        if (!sheetState.isVisible) {
+                            showBottomSheet.value = false
+                        }
+                    }
+                }) {
+                    Icon(Icons.Default.Send, contentDescription = "Create task")
+                }
+            }
+
+        }
+        LaunchedEffect(Unit) {
+            focusRequester.requestFocus()
         }
     }
 }

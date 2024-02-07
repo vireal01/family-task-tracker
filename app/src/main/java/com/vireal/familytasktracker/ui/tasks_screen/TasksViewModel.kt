@@ -38,18 +38,28 @@ class TasksViewModel @Inject constructor(
         }
     }
 
-    fun createStubTask() {
+    fun changeTaskCompletionStatus(taskEntity: TaskEntity, isCompleted: Boolean) {
         viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
-            val taskId = UUID.randomUUID().toString()
+            db.taskDao().updateIsCompleted(taskEntity.taskId, isCompleted)
+        }
+    }
+
+    fun createTask(
+        taskTitle: String,
+        // Should i limit title and description fields max length?
+        taskDescription: String?,
+        dueDate: Long? = null
+    ) {
+        viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
             val task = TaskEntity(
                 taskId = UUID.randomUUID().toString(),
-                taskTitle = taskId,
-                taskDescription = "Description: $taskId",
+                taskTitle = taskTitle,
+                taskDescription = taskDescription,
                 createdDate = System.currentTimeMillis(),
                 updatedDate = System.currentTimeMillis(),
                 assignedToUser = 1,
                 createdByUser = 1,
-                dueDate = null,
+                dueDate = dueDate,
                 isCompleted = false
             )
             db.taskDao().insertTask(task)

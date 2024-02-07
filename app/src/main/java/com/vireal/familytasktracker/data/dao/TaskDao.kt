@@ -4,8 +4,10 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.vireal.familytasktracker.data.entities.TaskEntity
 import kotlinx.coroutines.flow.Flow
+import java.time.LocalTime
 
 @Dao
 interface TaskDao {
@@ -17,4 +19,10 @@ interface TaskDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertTask(taskEntity: TaskEntity)
+
+    @Update
+    fun updateTask(taskEntity: TaskEntity)
+
+    @Query("UPDATE tasks SET is_completed = :isCompleted, updated_date = :updateDate WHERE taskId = :taskId")
+    fun updateIsCompleted(taskId: String, isCompleted: Boolean, updateDate: Long = System.currentTimeMillis())
 }
