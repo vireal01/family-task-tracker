@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.vireal.familytasktracker.data.UserPreferencesRepository
 import com.vireal.familytasktracker.data.database.AppDatabase
 import com.vireal.familytasktracker.data.entities.TaskEntity
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -18,11 +19,19 @@ import javax.inject.Inject
 
 @HiltViewModel
 class TasksViewModel @Inject constructor(
-    private val db: AppDatabase
+    private val db: AppDatabase,
+    private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
     private val _allTasksList = MutableStateFlow<List<TaskEntity>>(mutableListOf())
     val allTasksList: StateFlow<List<TaskEntity>> = _allTasksList
+
+    private val showCompletedTasksDefault = userPreferencesRepository.lastPreferenceWithBlocking
+
+    private var _showCompletedTasks = MutableStateFlow(showCompletedTasksDefault)
+    val showCompletedTasks: StateFlow<Boolean> = _showCompletedTasks
+
+
 
     @SuppressLint("LogNotTimber")
     val exceptionHandler =
@@ -63,6 +72,14 @@ class TasksViewModel @Inject constructor(
                 isCompleted = false
             )
             db.taskDao().insertTask(task)
+        }
+    }
+
+    fun updateShowCompletedTasks(showCompletedTasks: Boolean) {
+
+        viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
+            userPreferencesRepository.updateShowCompletedTasks(showCompletedTasks)
+            _showCompletedTasks.value = showCompletedTasks
         }
     }
 }

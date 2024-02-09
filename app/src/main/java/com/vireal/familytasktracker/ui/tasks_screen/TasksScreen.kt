@@ -21,12 +21,16 @@ import com.vireal.familytasktracker.ui.Paddings
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
@@ -66,7 +70,17 @@ fun TaskScreen(
             TopAppBar(
                 title = stringResource(id = R.string.tasks_title),
                 openDrawer = { openDrawer() }
-            )
+            ) {
+                MoreDropdownMenuContent(
+                    showCompleted = {
+                        viewModel.updateShowCompletedTasks(true)
+                    },
+                    hideCompleted = {
+                        viewModel.updateShowCompletedTasks(false)
+                    },
+                    viewModel.showCompletedTasks.collectAsState().value
+                )
+            }
         },
         floatingActionButton = {
             FloatingActionButton(
@@ -80,7 +94,11 @@ fun TaskScreen(
             }
         }
     ) { innerPadding ->
-        val tasks = viewModel.allTasksList.collectAsState().value
+        val tasks = if (viewModel.showCompletedTasks.collectAsState().value) {
+            viewModel.allTasksList.collectAsState().value
+        } else {
+            viewModel.allTasksList.collectAsState().value.filter { !it.isCompleted }
+        }
         LazyColumn(
             contentPadding = PaddingValues(Paddings.one),
             verticalArrangement = Arrangement.spacedBy(Paddings.half),
@@ -114,8 +132,10 @@ fun TaskItem(
     onCheckedChange: () -> Unit
 ) {
     val textDecoration = if (item.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+    val taskBackgroundColor =
+        if (item.isCompleted) MaterialTheme.colorScheme.inverseOnSurface else MaterialTheme.colorScheme.surfaceVariant
     Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant,
+        color = taskBackgroundColor,
         shape = MaterialTheme.shapes.medium,
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -124,7 +144,6 @@ fun TaskItem(
         ) {
             Column(
                 modifier = Modifier
-//                .clickable { onClick() }
                     .padding(Paddings.one)
                     .weight(4f)
                     .height(64.dp - Paddings.one),
@@ -230,19 +249,22 @@ fun CreateTaskBottomSheet(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                Button(onClick = {
-                    scope.launch {
-                        viewModel.createTask(
-                            taskTitle,
-                            taskDescription
-                        )
-                        sheetState.hide()
-                    }.invokeOnCompletion {
-                        if (!sheetState.isVisible) {
-                            showBottomSheet.value = false
+                Button(
+                    onClick = {
+                        scope.launch {
+                            viewModel.createTask(
+                                taskTitle,
+                                taskDescription
+                            )
+                            sheetState.hide()
+                        }.invokeOnCompletion {
+                            if (!sheetState.isVisible) {
+                                showBottomSheet.value = false
+                            }
                         }
-                    }
-                }) {
+                    },
+                    enabled = taskTitle.isNotEmpty()
+                ) {
                     Icon(Icons.Default.Send, contentDescription = "Create task")
                 }
             }
@@ -250,6 +272,33 @@ fun CreateTaskBottomSheet(
         }
         LaunchedEffect(Unit) {
             focusRequester.requestFocus()
+        }
+    }
+}
+
+
+@Composable
+fun MoreDropdownMenuContent(
+    showCompleted: () -> Unit,
+    hideCompleted: () -> Unit,
+    isCompletedTasksShown: Boolean
+) {
+    var showDropdownMenu by remember { mutableStateOf(false) }
+
+    IconButton(onClick = { showDropdownMenu = true }) {
+        Icon(Icons.Default.MoreVert, contentDescription = null)
+    }
+    DropdownMenu(expanded = showDropdownMenu, onDismissRequest = {
+        showDropdownMenu = false
+    }) {
+        if (isCompletedTasksShown) {
+            DropdownMenuItem(
+                text = { Text(text = "Hide completed") },
+                onClick = { hideCompleted(); showDropdownMenu = false })
+        } else {
+            DropdownMenuItem(
+                text = { Text(text = "Show completed") },
+                onClick = { showCompleted(); showDropdownMenu = false })
         }
     }
 }
