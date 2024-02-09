@@ -16,7 +16,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.vireal.familytasktracker.data.entities.TaskEntity
 import com.vireal.familytasktracker.ui.Paddings
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -56,6 +55,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import com.vireal.familytasktracker.R
+import com.vireal.familytasktracker.data.models.TaskModel
 import com.vireal.familytasktracker.ui.TopAppBar
 
 @Composable
@@ -64,6 +64,8 @@ fun TaskScreen(
     openDrawer: () -> Unit = {}
 ) {
     val showBottomSheet = remember { mutableStateOf(false) }
+    val showCompletedTasks = viewModel.showCompletedTasks.collectAsState()
+    val tasksList = viewModel.allTasksList.collectAsState()
 
     Scaffold(
         topBar = {
@@ -72,13 +74,8 @@ fun TaskScreen(
                 openDrawer = { openDrawer() }
             ) {
                 MoreDropdownMenuContent(
-                    showCompleted = {
-                        viewModel.updateShowCompletedTasks(true)
-                    },
-                    hideCompleted = {
-                        viewModel.updateShowCompletedTasks(false)
-                    },
-                    viewModel.showCompletedTasks.collectAsState().value
+                    updateShowCompletedTasks = viewModel::updateShowCompletedTasks,
+                    isCompletedTasksShown = showCompletedTasks.value
                 )
             }
         },
@@ -94,18 +91,13 @@ fun TaskScreen(
             }
         }
     ) { innerPadding ->
-        val tasks = if (viewModel.showCompletedTasks.collectAsState().value) {
-            viewModel.allTasksList.collectAsState().value
-        } else {
-            viewModel.allTasksList.collectAsState().value.filter { !it.isCompleted }
-        }
         LazyColumn(
             contentPadding = PaddingValues(Paddings.one),
             verticalArrangement = Arrangement.spacedBy(Paddings.half),
             modifier = Modifier.padding(top = innerPadding.calculateTopPadding()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            items(tasks, key = { task -> task.taskId }) { task ->
+            items(tasksList.value, key = { task -> task.taskId }) { task ->
                 TaskItem(
                     item = task,
                     onCheckedChange = {
@@ -128,7 +120,7 @@ fun TaskScreen(
 
 @Composable
 fun TaskItem(
-    item: TaskEntity,
+    item: TaskModel,
     onCheckedChange: () -> Unit
 ) {
     val textDecoration = if (item.isCompleted) TextDecoration.LineThrough else TextDecoration.None
@@ -279,8 +271,7 @@ fun CreateTaskBottomSheet(
 
 @Composable
 fun MoreDropdownMenuContent(
-    showCompleted: () -> Unit,
-    hideCompleted: () -> Unit,
+    updateShowCompletedTasks: (Boolean) -> Unit,
     isCompletedTasksShown: Boolean
 ) {
     var showDropdownMenu by remember { mutableStateOf(false) }
@@ -294,11 +285,11 @@ fun MoreDropdownMenuContent(
         if (isCompletedTasksShown) {
             DropdownMenuItem(
                 text = { Text(text = "Hide completed") },
-                onClick = { hideCompleted(); showDropdownMenu = false })
+                onClick = { updateShowCompletedTasks(false); showDropdownMenu = false })
         } else {
             DropdownMenuItem(
                 text = { Text(text = "Show completed") },
-                onClick = { showCompleted(); showDropdownMenu = false })
+                onClick = { updateShowCompletedTasks(true); showDropdownMenu = false })
         }
     }
 }
