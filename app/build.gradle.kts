@@ -79,6 +79,9 @@ dependencies {
     // required to avoid crash on Android 12 API 31
     implementation("androidx.work:work-runtime-ktx:2.9.0")
 
+    // DataStore
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
+
 
     // Room
     implementation("androidx.room:room-runtime:$roomVersion")
