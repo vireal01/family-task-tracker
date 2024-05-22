@@ -28,19 +28,19 @@ class TasksViewModel @Inject constructor(
     private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
-    private var _showCompletedTasks = MutableStateFlow(userPreferencesRepository.lastPreferenceWithBlocking)
+    private var _showCompletedTasks =
+        MutableStateFlow(userPreferencesRepository.lastPreferenceWithBlocking)
     val showCompletedTasks: StateFlow<Boolean> = _showCompletedTasks
 
     private val _allTasksList = MutableStateFlow<List<TaskModel>>(mutableListOf())
-    val allTasksList: StateFlow<List<TaskModel>> = combine(_allTasksList, _showCompletedTasks) {
-        list, showCompletedTasks ->
-        if (showCompletedTasks) {
-            list
-        } else {
-            list.filter { !it.isCompleted }
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
-
+    val allTasksList: StateFlow<List<TaskModel>> =
+        combine(_allTasksList, _showCompletedTasks) { list, showCompletedTasks ->
+            if (showCompletedTasks) {
+                list
+            } else {
+                list.filter { !it.isCompleted }
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), emptyList())
 
 
     @SuppressLint("LogNotTimber")
@@ -51,8 +51,8 @@ class TasksViewModel @Inject constructor(
 
     init {
         viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
-            db.taskDao().observeTasks().collectLatest {list ->
-                _allTasksList.value = list.map { task ->  mapTaskEntityToTaskModel(task) }
+            db.taskDao().observeTasks().collectLatest { list ->
+                _allTasksList.value = list.map { task -> mapTaskEntityToTaskModel(task) }
             }
         }
     }
@@ -91,6 +91,12 @@ class TasksViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
             userPreferencesRepository.updateShowCompletedTasks(showCompletedTasks)
             _showCompletedTasks.value = showCompletedTasks
+        }
+    }
+
+    fun deleteTask(taskId: String) {
+        viewModelScope.launch(Dispatchers.IO + exceptionHandler) {
+            db.taskDao().deleteTask(taskId)
         }
     }
 }

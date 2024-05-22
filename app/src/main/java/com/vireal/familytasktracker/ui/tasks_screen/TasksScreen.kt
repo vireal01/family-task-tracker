@@ -1,11 +1,15 @@
 package com.vireal.familytasktracker.ui.tasks_screen
 
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -56,8 +60,10 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import com.vireal.familytasktracker.R
 import com.vireal.familytasktracker.data.models.TaskModel
-import com.vireal.familytasktracker.ui.TopAppBar
+import com.vireal.familytasktracker.ui.common_components.SwipeToDeleteContainer
+import com.vireal.familytasktracker.ui.common_components.TopAppBar
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TaskScreen(
     viewModel: TasksViewModel = hiltViewModel(),
@@ -91,30 +97,45 @@ fun TaskScreen(
             }
         }
     ) { innerPadding ->
-        LazyColumn(
-            contentPadding = PaddingValues(Paddings.one),
-            verticalArrangement = Arrangement.spacedBy(Paddings.half),
-            modifier = Modifier.padding(top = innerPadding.calculateTopPadding()),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            items(tasksList.value, key = { task -> task.taskId }) { task ->
-                TaskItem(
-                    item = task,
-                    onCheckedChange = {
-                        viewModel.changeTaskCompletionStatus(
-                            task,
-                            !task.isCompleted
-                        )
+        Log.d("debugg", "${tasksList.value.size}")
+        if (tasksList.value.isEmpty()) {
+            Placeholder()
+        } else {
+            LazyColumn(
+                contentPadding = PaddingValues(Paddings.one),
+                verticalArrangement = Arrangement.spacedBy(Paddings.half),
+                modifier = Modifier.padding(top = innerPadding.calculateTopPadding()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                items(tasksList.value, key = { task -> task.taskId }) { task ->
+                    Box(modifier = Modifier.animateItemPlacement()) {
+                        SwipeToDeleteContainer(
+                            item = task,
+                            onDelete = {
+                                viewModel.deleteTask(task.taskId)
+                            }
+                        ) {
+                            TaskItem(
+                                item = task,
+                                onCheckedChange = {
+                                    viewModel.changeTaskCompletionStatus(
+                                        task,
+                                        !task.isCompleted
+                                    )
+                                }
+                            )
+                        }
                     }
-                )
+                }
             }
         }
-        if (showBottomSheet.value) {
-            CreateTaskBottomSheet(
-                showBottomSheet = showBottomSheet,
-                viewModel = viewModel
-            )
-        }
+
+    }
+    if (showBottomSheet.value) {
+        CreateTaskBottomSheet(
+            showBottomSheet = showBottomSheet,
+            viewModel = viewModel
+        )
     }
 }
 
@@ -123,7 +144,8 @@ fun TaskItem(
     item: TaskModel,
     onCheckedChange: () -> Unit
 ) {
-    val textDecoration = if (item.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+    val textDecoration =
+        if (item.isCompleted) TextDecoration.LineThrough else TextDecoration.None
     val taskBackgroundColor =
         if (item.isCompleted) MaterialTheme.colorScheme.inverseOnSurface else MaterialTheme.colorScheme.surfaceVariant
     Surface(
@@ -291,5 +313,18 @@ fun MoreDropdownMenuContent(
                 text = { Text(text = "Show completed") },
                 onClick = { updateShowCompletedTasks(true); showDropdownMenu = false })
         }
+    }
+}
+
+@Composable
+fun Placeholder() {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text(
+            text = "No tasks to do! \n Well done!",
+            modifier = Modifier.fillMaxSize(),
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodyMedium,
+        )
     }
 }

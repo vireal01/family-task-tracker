@@ -4,7 +4,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.vireal.familytasktracker.R
-import com.vireal.familytasktracker.ui.TopAppBar
+import com.vireal.familytasktracker.ui.common_components.TopAppBar
 
 @Composable
 fun FamilyGroupScreen(openDrawer: () -> Unit) {

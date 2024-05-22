@@ -2,4 +2,6 @@
     <string name="app_name">Family task tracker</string>
     <string name="tasks_title">Tasks</string>
     <string name="family_group_title">Family Group</string>
+    <string name="delete">Delete</string>
+
 </resources>

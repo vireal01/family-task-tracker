@@ -1,9 +1,8 @@
-import org.apache.tools.ant.util.JavaEnvUtils.VERSION_11
 
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id ("kotlin-parcelize")
+    id("kotlin-parcelize")
     kotlin("kapt")
     id("com.google.dagger.hilt.android")
 }
@@ -30,7 +29,7 @@ android {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }
@@ -70,7 +69,7 @@ dependencies {
 
     // Hilt
     implementation("com.google.dagger:hilt-android:2.50")
-    annotationProcessor ("com.google.dagger:hilt-compiler:2.50")
+    annotationProcessor("com.google.dagger:hilt-compiler:2.50")
     implementation("androidx.hilt:hilt-navigation-fragment:1.1.0")
     implementation("androidx.hilt:hilt-work:1.1.0")
     kapt("com.google.dagger:hilt-android-compiler:2.50")
@@ -81,7 +80,6 @@ dependencies {
 
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.0.0")
-
 
     // Room
     implementation("androidx.room:room-runtime:$roomVersion")
@@ -96,4 +94,6 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+    testImplementation(kotlin("test"))
 }
