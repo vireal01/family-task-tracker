@@ -1,13 +1,10 @@
 package com.vireal.familytasktracker.data.entities
 
-import android.os.Parcelable
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import kotlinx.parcelize.Parcelize
 
 
-@Parcelize
 @Entity(tableName = "tasks")
 data class TaskEntity(
     @PrimaryKey val taskId: String,
@@ -17,6 +14,8 @@ data class TaskEntity(
     @ColumnInfo(name = "updated_date") val updatedDate: Long,
     @ColumnInfo(name = "assigned_to_user") val assignedToUser: Int,
     @ColumnInfo(name = "created_by_user") val createdByUser: Int,
-    @ColumnInfo(name = "due_date") val dueDate: Int?,
+    @ColumnInfo(name = "due_date") val dueDate: Long?,
     @ColumnInfo(name = "is_completed") val isCompleted: Boolean,
-) : Parcelable
+    // make new table assignees assignee has own id and tasks
+    // 1/ users 2/ tasks 3/ many-to-many relations taskId - assignee
+)
